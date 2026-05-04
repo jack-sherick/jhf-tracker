@@ -1,5 +1,5 @@
 import re
-from logtypes import CardPlayed, PotionUsed, MonsterPlayed, Encounter, CombatReward, RarityStats
+from logtypes import CardPlayed, PotionUsed, MonsterPlayed, Encounter, CombatReward, RarityStats, MerchantAction
 
 # module state (I wish this was Haskell too)
 _act = 0
@@ -8,6 +8,13 @@ _turn = 0
 _in_player_turn = False
 _rarity_buf: list[tuple[float, float]] = []
 _reward: dict | None = None
+_current_room: str | None = None  # tracks room type between preload and MapVote
+_player_prefix = "Player 1"  # player 1 for singleplayer / player {STEAM_ID} for multiplayer
+
+
+def set_player_prefix(prefix: str):
+    global _player_prefix
+    _player_prefix = prefix
 
 
 def _flush_reward() -> list:
@@ -26,7 +33,7 @@ def _flush_reward() -> list:
 
 
 def parse(log: str) -> list:
-    global _act, _floor, _turn, _in_player_turn, _rarity_buf, _reward
+    global _act, _floor, _turn, _in_player_turn, _rarity_buf, _reward, _current_room
 
     log = log.strip()
 
@@ -39,8 +46,15 @@ def parse(log: str) -> list:
             _floor = int(m.group(2))
             _turn = 0
             _in_player_turn = False
+            _current_room = None
             return events
         return []
+
+    # Non-combat room types — track current room for context
+    for room_type in ("Event", "RestSite", "Merchant", "Treasure"):
+        if f"[INFO] Preloading '{room_type} Room'" in log and "Complete" not in log:
+            _current_room = room_type
+            return [Encounter(room=room_type, mode=room_type, encounter=None, floor=_floor)]
 
     # Encounter start
     if "[INFO] Creating NCombatRoom" in log:
@@ -48,29 +62,39 @@ def parse(log: str) -> list:
         if m:
             _turn = 0
             _in_player_turn = False
+            _current_room = "Combat"
             return [Encounter(room="Combat", mode=m.group(1), encounter=m.group(2), floor=_floor)]
         return []
 
+    # Merchant: chose cards = card purchased (non-empty) or card cut (need save diff to distinguish)
+    if f"[INFO] {_player_prefix} chose cards" in log and _current_room == "Merchant":
+        m = re.search(r'chose cards \[([^\]]*)\]', log)
+        if m:
+            cards = [c.strip() for c in m.group(1).split(",") if c.strip()]
+            if cards:
+                return [MerchantAction(action="card_cuts_purchased", items=cards, floor=_floor)]
+        return []
+
     # Card played
-    if "[INFO] Player 1 playing card" in log:
-        m = re.match(r'\[INFO\] Player 1 playing card (\S+) \((.+)\)', log)
+    if f"[INFO] {_player_prefix} playing card" in log:
+        m = re.search(rf'\[INFO\] {re.escape(_player_prefix)} playing card (\S+) \((.+)\)', log)
         if m:
             if not _in_player_turn:
                 _turn += 1
                 _in_player_turn = True
             target = None if m.group(2) == "no target" else m.group(2)
-            return [CardPlayed(player_id="1", character="", card=m.group(1), target=target, turn=_turn, floor=_floor)]
+            return [CardPlayed(player_id=_player_prefix, character="", card=m.group(1), target=target, turn=_turn, floor=_floor)]
         return []
 
     # Potion used
-    if "[INFO] Player 1 using potion" in log:
-        m = re.match(r'\[INFO\] Player 1 using potion (\S+) \((.+)\)', log)
+    if f"[INFO] {_player_prefix} using potion" in log:
+        m = re.search(rf'\[INFO\] {re.escape(_player_prefix)} using potion (\S+) \((.+)\)', log)
         if m:
             if not _in_player_turn:
                 _turn += 1
                 _in_player_turn = True
             target = None if m.group(2) == "no target" else m.group(2)
-            return [PotionUsed(player_id="1", character="", potion=m.group(1), target=target, turn=_turn, floor=_floor)]
+            return [PotionUsed(player_id=_player_prefix, character="", potion=m.group(1), target=target, turn=_turn, floor=_floor)]
         return []
 
     # Monster move - ends the player's turn
@@ -81,7 +105,7 @@ def parse(log: str) -> list:
             return [MonsterPlayed(monster=m.group(1), move=m.group(2), turn=_turn, floor=_floor)]
         return []
 
-    # Rewards
+    # Combat rewards
     if "[INFO] Obtained" in log:
         m = re.search(r'Obtained (\d+) gold from reward', log)
         if m:
@@ -94,7 +118,7 @@ def parse(log: str) -> list:
         if m:
             if _reward is None:
                 _reward = {}
-            _reward["card"] = m.group(1)
+            _reward.setdefault("card", []).append(m.group(1))
             return []
 
         m = re.search(r'Obtained POTION\.(\S+) from potion reward', log)

@@ -53,4 +53,3 @@ _cfg = _load()
 STEAM_ID: str = _cfg["steam_id"]
 PLAYER_ID: str = STEAM_ID
 PROFILE: int = _cfg["profile"]
-SINGLEPLAYER: bool = True

@@ -8,6 +8,14 @@ def _connect():
     return psycopg2.connect(config.DB_URL)
 
 
+def _as_list(value) -> list:
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return value
+    return [value]
+
+
 def insert_run(run: dict):
     floors = run.get("floors", {})
     floor_reached = run.get("floor_reached", 0)
@@ -17,8 +25,8 @@ def insert_run(run: dict):
             cur.execute(
                 """
                 INSERT INTO runs (run_id, player_id, character, ascension, seed, result,
-                                  floor_reached, gold, health, max_health, deck)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                  floor_reached, gold, health, max_health, deck, multiplayer)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (run_id) DO NOTHING
                 """,
                 (
@@ -33,6 +41,7 @@ def insert_run(run: dict):
                     run.get("health"),
                     run.get("max_health"),
                     json.dumps(run.get("deck", [])),
+                    run.get("multiplayer", False),
                 ),
             )
 
@@ -43,8 +52,11 @@ def insert_run(run: dict):
                     INSERT INTO floors (run_id, act, floor, encounter, mode,
                                        cards_played, potions_used, monster_moves, rarity_stats,
                                        reward_gold, reward_card, reward_potion, reward_relic,
-                                       health, max_health, health_lost)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                       health, max_health, health_lost, max_health_lost,
+                                       character, relics, floor_gold,
+                                       cards_purchased, relics_purchased, potions_purchased, card_cuts_purchased,
+                                       multiplayer)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     """,
                     (
                         run["run_id"],
@@ -57,13 +69,26 @@ def insert_run(run: dict):
                         json.dumps(floor.get("monster_moves", [])),
                         json.dumps(floor.get("rarity_stats")),
                         reward.get("gold"),
-                        reward.get("card"),
+                        json.dumps(_as_list(reward.get("card"))),
                         reward.get("potion"),
                         reward.get("relic"),
                         floor.get("health"),
                         floor.get("max_health"),
                         floor.get("health_lost"),
+                        floor.get("max_health_lost"),
+                        floor.get("character"),
+                        json.dumps(floor.get("relics", [])),
+                        floor.get("floor_gold"),
+                        json.dumps(floor.get("cards_purchased", [])),
+                        json.dumps(floor.get("relics_purchased", [])),
+                        json.dumps(floor.get("potions_purchased", [])),
+                        json.dumps(floor.get("card_cuts_purchased", [])),
+                        run.get("multiplayer", False),
                     ),
                 )
 
     print(f"[db] Inserted run {run['run_id']} with {len(floors)} floors")
+
+    with _connect() as conn:
+        with conn.cursor() as cur:
+            cur.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY cards")

@@ -53,7 +53,7 @@ class Encounter:
 @dataclass
 class CombatReward:
     gold: int
-    card: str | None
+    card: list[str] | None
     potion: str | None
     relic: str | None
 
@@ -80,10 +80,18 @@ class RestSite:
 
     floor: int
 
+# event information is not logged, so it waits for an event to be recorded in the log, then pulls the name and result from the save retroactively
 @dataclass
 class Event:
     event: str
 
     floor: int
 
-LogEvent = CardPlayed | PotionUsed | MonsterPlayed | Encounter | CombatReward | RarityStats | RestSite
+@dataclass
+class MerchantAction:
+    action: str  # cards_purchased, card_cuts_purchased, relics_purchased, potions_purchased
+    items: list[str]
+
+    floor: int
+
+LogEvent = CardPlayed | PotionUsed | MonsterPlayed | Encounter | CombatReward | RarityStats | RestSite | MerchantAction

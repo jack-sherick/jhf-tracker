@@ -5,7 +5,7 @@ import time
 import os
 
 import config
-
+from logtypes import Encounter
 import parser
 import run_tracker
 import save_reader
@@ -33,6 +33,11 @@ def _open_log():
             time.sleep(1)
 
 
+if save_reader.detect_mode():
+    save_reader.set_mode(True)
+    parser.set_player_prefix(f"Player {config.STEAM_ID}")
+    print("[listener] detected active multiplayer session")
+
 with open(OUT_PATH, "w", encoding="utf-8") as out:
 
     f = _open_log()
@@ -49,6 +54,12 @@ with open(OUT_PATH, "w", encoding="utf-8") as out:
                         if line.startswith("[INFO] Wrote"):
                             snapshot = save_reader.parse_save(save_reader.read_save())
                             run_tracker.on_save(snapshot)
+
+                        for event in events:
+                            if isinstance(event, Encounter) and event.mode == "Event":
+                                run_tracker.on_event_room(save_reader.read_save())
+                            elif isinstance(event, Encounter) and event.mode == "Merchant":
+                                run_tracker.on_merchant_enter(save_reader.parse_save(save_reader.read_save()))
                     except Exception as e:
                         print(f"[listener] Error processing line: {e}\n  Line: {line.strip()}")
 

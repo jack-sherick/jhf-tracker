@@ -11,7 +11,7 @@ v. 0.1.0
 > - There's no frontend
 > - Windows Defender complains (only a little though)
 > - Unauthorized write access to DB
-> ##### Floor/Encounter
+> ##### Floor
 >* Act
 >* Floor
 >* Coords
@@ -52,6 +52,12 @@ v. 0.1.0
 >* Pass rate (shop)
 >* Win rate
 >* Pick rate (mostly coincidence but for fun)
+> ##### Encounters
+>> (seems hard to track properly?)
+>* Name
+>* Type
+>* Average health lost (per character)
+>* Highest winrate choice
 > ##### Characters
 >* Win rate
 >* Play rate
