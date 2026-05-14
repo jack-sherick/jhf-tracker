@@ -25,8 +25,8 @@ def insert_run(run: dict):
             cur.execute(
                 """
                 INSERT INTO runs (run_id, player_id, character, ascension, seed, result,
-                                  floor_reached, gold, health, max_health, deck, multiplayer)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                  floor_reached, gold, health, max_health, deck, relics, multiplayer)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (run_id) DO NOTHING
                 """,
                 (
@@ -41,6 +41,7 @@ def insert_run(run: dict):
                     run.get("health"),
                     run.get("max_health"),
                     json.dumps(run.get("deck", [])),
+                    json.dumps(run.get("relics", [])),
                     run.get("multiplayer", False),
                 ),
             )
@@ -89,6 +90,12 @@ def insert_run(run: dict):
 
     print(f"[db] Inserted run {run['run_id']} with {len(floors)} floors")
 
-    with _connect() as conn:
-        with conn.cursor() as cur:
-            cur.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY cards")
+    conn = _connect()
+    conn.autocommit = True
+    with conn.cursor() as cur:
+        for view in ("cards", "encounters", "events", "relics"):
+            try:
+                cur.execute(f"REFRESH MATERIALIZED VIEW CONCURRENTLY {view}")
+            except Exception as e:
+                print(f"[db] Failed to refresh {view}: {e}")
+    conn.close()

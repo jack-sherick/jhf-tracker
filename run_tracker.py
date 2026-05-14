@@ -146,6 +146,7 @@ def on_save(snapshot: dict | None):
 
     _run["gold"] = snapshot["gold"]
     _run["deck"] = snapshot["deck"]
+    _run["relics"] = snapshot.get("relics", [])
     _run["health"] = snapshot["health"]
     _run["max_health"] = snapshot["max_health"]
 
@@ -165,6 +166,7 @@ def _start_run(character: str, ascension: int, seed: str, multiplayer: bool):
         "health": None,
         "max_health": None,
         "deck": [],
+        "relics": [],
         "floors": {},
     }
     _result = True
