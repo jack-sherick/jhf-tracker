@@ -1,14 +1,33 @@
 import json
 import os
+import platform
 
-CONFIG_DIR = os.path.expandvars(r"%APPDATA%\jhf-tracker")
+def _sts2_data_dir() -> str:
+    system = platform.system()
+    if system == "Windows":
+        return os.path.expandvars(r"%APPDATA%\SlaytheSpire2")
+    elif system == "Darwin":
+        return os.path.expanduser("~/Library/Application Support/SlayTheSpire2")
+    else:
+        return os.path.expanduser("~/.local/share/SlayTheSpire2")
+
+def _app_config_dir() -> str:
+    system = platform.system()
+    if system == "Windows":
+        return os.path.expandvars(r"%APPDATA%\jhf-tracker")
+    elif system == "Darwin":
+        return os.path.expanduser("~/Library/Application Support/jhf-tracker")
+    else:
+        return os.path.expanduser("~/.config/jhf-tracker")
+
+CONFIG_DIR = _app_config_dir()
 CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")
 
 DB_URL = "postgresql://neondb_owner:npg_VcGZ8TFAbx4m@ep-little-hat-aedez85o-pooler.c-2.us-east-2.aws.neon.tech/neondb?channel_binding=require&sslmode=require"
 
 
 def _detect_steam_id() -> str:
-    steam_dir = os.path.expandvars(r"%APPDATA%\SlaytheSpire2\steam")
+    steam_dir = os.path.join(_sts2_data_dir(), "steam")
     try:
         accounts = [e for e in os.listdir(steam_dir) if os.path.isdir(os.path.join(steam_dir, e))]
     except FileNotFoundError:

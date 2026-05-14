@@ -5,8 +5,8 @@ import config
 
 def _build_path(multiplayer: bool) -> str:
     filename = "current_run_mp.save" if multiplayer else "current_run.save"
-    return os.path.expandvars(
-        rf"%APPDATA%\SlaytheSpire2\steam\{config.STEAM_ID}\profile{config.PROFILE}\saves\{filename}"
+    return os.path.join(
+        config._sts2_data_dir(), "steam", config.STEAM_ID, f"profile{config.PROFILE}", "saves", filename
     )
 
 SAVE_PATH = _build_path(False)

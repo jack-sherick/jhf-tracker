@@ -1,5 +1,5 @@
-import ctypes
-import ctypes.wintypes
+import platform
+import signal
 import sys
 import time
 import os
@@ -10,13 +10,16 @@ import parser
 import run_tracker
 import save_reader
 
-_HANDLER = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.wintypes.DWORD)
-_handler_ref = _HANDLER(lambda event: sys.exit(0) or False)
-ctypes.windll.kernel32.SetConsoleCtrlHandler(_handler_ref, True)
+if platform.system() == "Windows":
+    import ctypes
+    import ctypes.wintypes
+    _HANDLER = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.wintypes.DWORD)
+    _handler_ref = _HANDLER(lambda event: sys.exit(0) or False)
+    ctypes.windll.kernel32.SetConsoleCtrlHandler(_handler_ref, True)
+else:
+    signal.signal(signal.SIGINT, lambda sig, frame: sys.exit(0))
 
-LOG_PATH = os.path.expandvars(
-    r"%APPDATA%\SlaytheSpire2\logs\godot.log"
-)
+LOG_PATH = os.path.join(config._sts2_data_dir(), "logs", "godot.log")
 
 os.makedirs(config.CONFIG_DIR, exist_ok=True)
 OUT_PATH = os.path.join(config.CONFIG_DIR, "session.log")

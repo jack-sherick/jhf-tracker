@@ -16,6 +16,8 @@ a = Analysis(
 )
 pyz = PYZ(a.pure)
 
+import sys
+
 exe = EXE(
     pyz,
     a.scripts,
@@ -36,3 +38,10 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
 )
+
+if sys.platform == 'darwin':
+    app = BUNDLE(
+        exe,
+        name='jhf-tracker.app',
+        bundle_identifier='com.jhf-tracker',
+    )
