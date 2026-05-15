@@ -1,12 +1,16 @@
 import json
 import os
 import platform
+import ssl
 import sys
 import urllib.request
 
+import certifi
 import config
 
-_GITHUB_TOKEN = "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"
+_SSL_CTX = ssl.create_default_context(cafile=certifi.where())
+
+from secrets import GITHUB_TOKEN as _GITHUB_TOKEN
 _API_URL = "https://api.github.com/repos/jack-sherick/jhf-tracker/releases/latest"
 _ASSET_NAME = {
     "Darwin": "jhf-tracker-mac",
@@ -33,7 +37,7 @@ def check_and_update():
     print(f"[updater] Checking for updates (current: {config.VERSION})...")
     try:
         req = urllib.request.Request(_API_URL, headers=headers)
-        with urllib.request.urlopen(req, timeout=5) as resp:
+        with urllib.request.urlopen(req, timeout=5, context=_SSL_CTX) as resp:
             data = json.loads(resp.read())
     except Exception as e:
         print(f"[updater] Could not check for updates: {e}")
@@ -56,7 +60,7 @@ def check_and_update():
     try:
         dl_headers = {**headers, "Accept": "application/octet-stream"}
         req = urllib.request.Request(asset_url, headers=dl_headers)
-        with urllib.request.urlopen(req, timeout=60) as resp:
+        with urllib.request.urlopen(req, timeout=60, context=_SSL_CTX) as resp:
             new_binary = resp.read()
     except Exception as e:
         print(f"[updater] Download failed: {e}")
