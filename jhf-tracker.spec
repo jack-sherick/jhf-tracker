@@ -2,7 +2,7 @@
 
 
 a = Analysis(
-    ['listener.py'],
+    ['main.py'],
     pathex=[],
     binaries=[],
     datas=[],

@@ -1,0 +1,81 @@
+import json
+import os
+import platform
+import sys
+import urllib.request
+
+import config
+
+_GITHUB_TOKEN = "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"
+_API_URL = "https://api.github.com/repos/jack-sherick/jhf-tracker/releases/latest"
+_ASSET_NAME = {
+    "Darwin": "jhf-tracker-mac",
+    "Linux": "jhf-tracker-linux",
+}
+
+
+def _parse_version(v: str) -> tuple:
+    return tuple(int(x) for x in v.lstrip("v").split("."))
+
+
+def check_and_update():
+    system = platform.system()
+    asset_name = _ASSET_NAME.get(system)
+    if not asset_name:
+        return
+
+    headers = {
+        "Authorization": f"Bearer {_GITHUB_TOKEN}",
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+
+    print(f"[updater] Checking for updates (current: {config.VERSION})...")
+    try:
+        req = urllib.request.Request(_API_URL, headers=headers)
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read())
+    except Exception as e:
+        print(f"[updater] Could not check for updates: {e}")
+        return
+
+    latest_tag = data.get("tag_name", "")
+    if not latest_tag or _parse_version(latest_tag) <= _parse_version(config.VERSION):
+        print(f"[updater] Up to date")
+        return
+
+    asset_url = next(
+        (a["url"] for a in data.get("assets", []) if a["name"] == asset_name),
+        None,
+    )
+    if not asset_url:
+        print(f"[updater] No asset '{asset_name}' found in release {latest_tag}")
+        return
+
+    print(f"[updater] Downloading {latest_tag}...")
+    try:
+        dl_headers = {**headers, "Accept": "application/octet-stream"}
+        req = urllib.request.Request(asset_url, headers=dl_headers)
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            new_binary = resp.read()
+    except Exception as e:
+        print(f"[updater] Download failed: {e}")
+        return
+
+    current = os.path.abspath(sys.argv[0])
+    tmp = current + ".new"
+    try:
+        with open(tmp, "wb") as f:
+            f.write(new_binary)
+        os.chmod(tmp, 0o755)
+        os.replace(tmp, current)
+    except Exception as e:
+        print(f"[updater] Failed to replace binary: {e}")
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
+        return
+
+    print(f"[updater] Updated to {latest_tag}. Restarting...")
+    os.execv(current, sys.argv)
