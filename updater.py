@@ -11,7 +11,7 @@ import config
 _SSL_CTX = ssl.create_default_context(cafile=certifi.where())
 
 from secrets import GITHUB_TOKEN as _GITHUB_TOKEN
-_API_URL = "https://api.github.com/repos/jack-sherick/jhf-tracker/releases/latest"
+_API_URL = "https://api.github.com/repos/jack-sherick/jhf-tracker/releases?per_page=1"
 _ASSET_NAME = {
     "Darwin": "jhf-tracker-mac",
     "Linux": "jhf-tracker-linux",
@@ -38,7 +38,8 @@ def check_and_update():
     try:
         req = urllib.request.Request(_API_URL, headers=headers)
         with urllib.request.urlopen(req, timeout=5, context=_SSL_CTX) as resp:
-            data = json.loads(resp.read())
+            releases = json.loads(resp.read())
+            data = releases[0] if releases else {}
     except Exception as e:
         print(f"[updater] Could not check for updates: {e}")
         return
