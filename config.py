@@ -23,7 +23,7 @@ def _app_config_dir() -> str:
 CONFIG_DIR = _app_config_dir()
 CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")
 
-VERSION = "0.1.1"
+VERSION = "0.1.2"
 
 DB_URL = "postgresql://neondb_owner:npg_VcGZ8TFAbx4m@ep-little-hat-aedez85o-pooler.c-2.us-east-2.aws.neon.tech/neondb?channel_binding=require&sslmode=require"
 

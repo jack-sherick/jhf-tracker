@@ -19,7 +19,7 @@ _ASSET_NAME = {
 
 
 def _parse_version(v: str) -> tuple:
-    return tuple(int(x) for x in v.lstrip("v").split("."))
+    return tuple(int(x) for x in v.lstrip("v").split("-")[0].split("."))
 
 
 def check_and_update():
