@@ -2,6 +2,7 @@ import json
 import os
 import platform
 import ssl
+import subprocess
 import sys
 import urllib.request
 
@@ -15,6 +16,7 @@ _API_URL = "https://api.github.com/repos/jack-sherick/jhf-tracker/releases?per_p
 _ASSET_NAME = {
     "Darwin": "jhf-tracker-mac",
     "Linux": "jhf-tracker-linux",
+    "Windows": "jhf-tracker.exe",
 }
 
 
@@ -72,15 +74,46 @@ def check_and_update():
     try:
         with open(tmp, "wb") as f:
             f.write(new_binary)
-        os.chmod(tmp, 0o755)
-        os.replace(tmp, current)
     except Exception as e:
-        print(f"[updater] Failed to replace binary: {e}")
-        try:
-            os.remove(tmp)
-        except OSError:
-            pass
+        print(f"[updater] Download failed to write: {e}")
         return
 
     print(f"[updater] Updated to {latest_tag}. Restarting...")
-    os.execv(current, sys.argv)
+
+    if system == "Windows":
+        bat = current + ".update.bat"
+        bat_content = (
+            "@echo off\n"
+            "ping -n 3 127.0.0.1 >NUL\n"
+            f"move /Y \"{tmp}\" \"{current}\"\n"
+            f"start \"\" \"{current}\"\n"
+            f"del \"{bat}\"\n"
+        )
+        try:
+            with open(bat, "w") as f:
+                f.write(bat_content)
+            subprocess.Popen(
+                ["cmd", "/c", bat],
+                creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NO_WINDOW,
+                close_fds=True,
+            )
+        except Exception as e:
+            print(f"[updater] Failed to launch updater script: {e}")
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
+            return
+        sys.exit(0)
+    else:
+        try:
+            os.chmod(tmp, 0o755)
+            os.replace(tmp, current)
+        except Exception as e:
+            print(f"[updater] Failed to replace binary: {e}")
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
+            return
+        os.execv(current, sys.argv)
