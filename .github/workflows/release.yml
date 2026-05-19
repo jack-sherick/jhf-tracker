@@ -1,0 +1,69 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            asset_name: jhf-tracker.exe
+            artifact_path: dist/jhf-tracker.exe
+          - os: macos-latest
+            asset_name: jhf-tracker-mac
+            artifact_path: dist/jhf-tracker.app/Contents/MacOS/jhf-tracker-bin
+          - os: ubuntu-latest
+            asset_name: jhf-tracker-linux
+            artifact_path: dist/jhf-tracker
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get install -y binutils
+
+      - name: Install Python packages
+        run: pip install psycopg2-binary pyinstaller certifi
+
+      - name: Create secrets.py
+        shell: bash
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: printf 'GITHUB_TOKEN = "%s"\n' "$GH_PAT" > secrets.py
+
+      - name: Build (Windows)
+        if: runner.os == 'Windows'
+        run: pyinstaller jhf-tracker.spec
+
+      - name: Build (macOS)
+        if: runner.os == 'macOS'
+        run: bash build_mac.sh
+
+      - name: Build (Linux)
+        if: runner.os == 'Linux'
+        run: pyinstaller jhf-tracker.spec
+
+      - name: Stage artifact
+        shell: bash
+        run: cp "${{ matrix.artifact_path }}" "${{ matrix.asset_name }}"
+
+      - name: Upload to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.asset_name }}
+          prerelease: ${{ contains(github.ref_name, '-') }} # pre-release includes dash
