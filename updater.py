@@ -82,11 +82,15 @@ def check_and_update():
 
     if system == "Windows":
         bat = current + ".update.bat"
+        log = current + ".update.log"
         bat_content = (
             "@echo off\n"
+            f"echo [bat] started >> \"{log}\"\n"
             "ping -n 3 127.0.0.1 >NUL\n"
-            f"move /Y \"{tmp}\" \"{current}\"\n"
+            f"move /Y \"{tmp}\" \"{current}\" >> \"{log}\" 2>&1\n"
+            f"echo [bat] move exit code: %errorlevel% >> \"{log}\"\n"
             f"start \"\" \"{current}\"\n"
+            f"echo [bat] launched >> \"{log}\"\n"
             f"del \"{bat}\"\n"
         )
         try:
