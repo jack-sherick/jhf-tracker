@@ -20,7 +20,7 @@ jobs:
           - os: macos-latest
             asset_name: jhf-tracker-mac
             artifact_path: dist/jhf-tracker.app/Contents/MacOS/jhf-tracker-bin
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             asset_name: jhf-tracker-linux
             artifact_path: dist/jhf-tracker
 
