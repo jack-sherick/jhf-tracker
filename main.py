@@ -1,7 +1,10 @@
 import sys
 
+import config
 import listener
 import updater
+
+print(f"[jhf-tracker] v{config.VERSION}")
 
 if getattr(sys, "frozen", False):
     try:
