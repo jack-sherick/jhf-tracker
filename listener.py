@@ -1,4 +1,5 @@
 import platform
+import re
 import signal
 import sys
 import time
@@ -14,10 +15,22 @@ LOG_PATH = os.path.join(config._sts2_data_dir(), "logs", "godot.log")
 OUT_PATH = os.path.join(config.CONFIG_DIR, "session.log")
 
 
+def _detect_patch(f):
+    pos = f.tell()
+    f.seek(0)
+    for line in f:
+        m = re.search(r'\[INFO\] \[Sentry\.NET\] Initialized:.*release=(v[\S]+)', line)
+        if m:
+            run_tracker.set_patch(m.group(1))
+            break
+    f.seek(pos)
+
+
 def _open_log():
     while True:
         try:
             f = open(LOG_PATH, "r", encoding="utf-8")
+            _detect_patch(f)
             f.seek(0, 2)
             print("[listener] Opened log file")
             return f

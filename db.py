@@ -25,8 +25,8 @@ def insert_run(run: dict):
             cur.execute(
                 """
                 INSERT INTO runs (run_id, player_id, character, ascension, seed, result,
-                                  floor_reached, gold, health, max_health, deck, relics, multiplayer)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                  floor_reached, gold, health, max_health, deck, relics, multiplayer, patch)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (run_id) DO NOTHING
                 """,
                 (
@@ -43,6 +43,7 @@ def insert_run(run: dict):
                     json.dumps(run.get("deck", [])),
                     json.dumps(run.get("relics", [])),
                     run.get("multiplayer", False),
+                    run.get("patch"),
                 ),
             )
 
@@ -56,8 +57,8 @@ def insert_run(run: dict):
                                        health, max_health, health_lost, max_health_lost,
                                        character, relics, floor_gold,
                                        cards_purchased, relics_purchased, potions_purchased, card_cuts_purchased,
-                                       multiplayer)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                       multiplayer, patch)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     """,
                     (
                         run["run_id"],
@@ -85,6 +86,7 @@ def insert_run(run: dict):
                         json.dumps(floor.get("potions_purchased", [])),
                         json.dumps(floor.get("card_cuts_purchased", [])),
                         run.get("multiplayer", False),
+                        run.get("patch"),
                     ),
                 )
 

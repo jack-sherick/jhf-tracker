@@ -16,6 +16,13 @@ _prev_floor_max_health: int | None = None
 _last_health: int | None = None
 _last_max_health: int | None = None
 _merchant_snapshot: dict | None = None
+_patch: str | None = None
+
+
+def set_patch(patch: str):
+    global _patch
+    _patch = patch
+    print(f"[run_tracker] Game patch: {patch}")
 
 
 def _get_floor(act: int, floor: int) -> dict:
@@ -160,6 +167,7 @@ def _start_run(character: str, ascension: int, seed: str, multiplayer: bool):
         "ascension": ascension,
         "seed": seed,
         "multiplayer": multiplayer,
+        "patch": _patch,
         "result": None,
         "floor_reached": 0,
         "gold": 0,
