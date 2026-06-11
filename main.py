@@ -15,4 +15,4 @@ if getattr(sys, "frozen", False):
         traceback.print_exc()
         input("[updater] Press Enter to continue...")
 
-tray.run(listener.run)
+tray.run(listener.run, log_path=listener.OUT_PATH)

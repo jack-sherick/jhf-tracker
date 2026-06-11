@@ -1,6 +1,7 @@
 import math
 import os
 import platform
+import subprocess
 import sys
 import threading
 import time
@@ -43,7 +44,28 @@ def _set_console_visible(visible: bool):
         ctypes.windll.user32.ShowWindow(hwnd, 5 if visible else 0)
 
 
-def run(listener_fn):
+def _open_log_terminal(log_path: str):
+    system = platform.system()
+    if system == "Darwin":
+        subprocess.Popen([
+            "osascript", "-e",
+            f'tell application "Terminal" to do script "tail -f {log_path}"'
+        ])
+    else:
+        for cmd in [
+            ["gnome-terminal", "--", "tail", "-f", log_path],
+            ["xfce4-terminal", "-e", f"tail -f {log_path}"],
+            ["konsole", "-e", f"tail -f {log_path}"],
+            ["xterm", "-e", f"tail -f {log_path}"],
+        ]:
+            try:
+                subprocess.Popen(cmd)
+                return
+            except FileNotFoundError:
+                continue
+
+
+def run(listener_fn, log_path=None):
     global _console_visible
     image = _make_icon()
 
@@ -56,19 +78,23 @@ def run(listener_fn):
         _console_visible = not _console_visible
         _set_console_visible(_console_visible)
 
+    def on_show_logs(icon, item):
+        if is_windows:
+            on_toggle_console(icon, item)
+        elif log_path:
+            _open_log_terminal(log_path)
+
     def on_quit(icon, item):
         icon.stop()
         sys.exit(0)
 
-    menu_items = []
-    if is_windows:
-        menu_items.append(
-            pystray.MenuItem(
-                lambda item: "Hide Logs" if _console_visible else "Show Logs",
-                on_toggle_console,
-            )
-        )
-    menu_items.append(pystray.MenuItem("Quit", on_quit))
+    menu_items = [
+        pystray.MenuItem(
+            lambda item: "Hide Logs" if _console_visible else "Show Logs",
+            on_show_logs,
+        ),
+        pystray.MenuItem("Quit", on_quit),
+    ]
 
     icon = pystray.Icon(
         "jhf-tracker",
@@ -78,11 +104,15 @@ def run(listener_fn):
     )
 
     threading.Thread(target=listener_fn, daemon=True).start()
-    threading.Thread(target=icon.run, daemon=True).start()
 
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        icon.stop()
-        sys.exit(0)
+    if platform.system() == "Darwin":
+        # macOS requires the tray to run on the main thread (AppKit)
+        icon.run()
+    else:
+        threading.Thread(target=icon.run, daemon=True).start()
+        try:
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            icon.stop()
+            sys.exit(0)

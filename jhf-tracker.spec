@@ -54,4 +54,5 @@ if sys.platform == 'darwin':
         name='jhf-tracker.app',
         bundle_identifier='com.jhf-tracker',
         icon='assets/stoke.icns',
+        info_plist={'LSUIElement': True},
     )
