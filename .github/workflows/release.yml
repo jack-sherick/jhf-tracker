@@ -18,8 +18,8 @@ jobs:
             asset_name: jhf-tracker.exe
             artifact_path: dist/jhf-tracker.exe
           - os: macos-latest
-            asset_name: jhf-tracker-mac
-            artifact_path: dist/jhf-tracker.app/Contents/MacOS/jhf-tracker
+            asset_name: jhf-tracker-mac.zip
+            artifact_path: dist/jhf-tracker.app
           - os: ubuntu-22.04
             asset_name: jhf-tracker-linux
             artifact_path: dist/jhf-tracker
@@ -64,7 +64,12 @@ jobs:
 
       - name: Stage artifact
         shell: bash
-        run: cp "${{ matrix.artifact_path }}" "${{ matrix.asset_name }}"
+        run: |
+          if [ "${{ runner.os }}" = "macOS" ]; then
+            ditto -c -k --keepParent "${{ matrix.artifact_path }}" "${{ matrix.asset_name }}"
+          else
+            cp "${{ matrix.artifact_path }}" "${{ matrix.asset_name }}"
+          fi
 
       - name: Upload to release
         uses: softprops/action-gh-release@v2
