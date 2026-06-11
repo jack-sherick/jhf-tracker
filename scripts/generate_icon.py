@@ -31,15 +31,16 @@ def build_ico(img: Image.Image, out: str):
     print(f"Saved {out}")
 
 
+_ICNS_KEYS = {16: 'icp4', 32: 'icp5', 64: 'icp6', 128: 'ic07', 256: 'ic08', 512: 'ic09', 1024: 'ic10'}
+
 def build_icns(img: Image.Image, out: str):
-    icns_sizes = [16, 32, 64, 128, 256, 512, 1024]
     ic = icnsutil.IcnsFile()
     with tempfile.TemporaryDirectory() as tmp:
-        for size in icns_sizes:
+        for size, key in _ICNS_KEYS.items():
             frame = make_circular_cover(img, size)
             path = os.path.join(tmp, f"{size}.png")
             frame.save(path, format="PNG")
-            ic.add_media(file=path)
+            ic.add_media(key=key, file=path)
     ic.write(out)
     print(f"Saved {out}")
 
