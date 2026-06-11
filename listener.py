@@ -1,9 +1,6 @@
-import platform
-import re
-import signal
-import sys
-import time
 import os
+import re
+import time
 
 import config
 from logtypes import Encounter
@@ -39,15 +36,6 @@ def _open_log():
 
 
 def run():
-    if platform.system() == "Windows":
-        import ctypes
-        import ctypes.wintypes
-        _HANDLER = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.wintypes.DWORD)
-        _handler_ref = _HANDLER(lambda event: sys.exit(0) or False)
-        ctypes.windll.kernel32.SetConsoleCtrlHandler(_handler_ref, True)
-    else:
-        signal.signal(signal.SIGINT, lambda sig, frame: sys.exit(0))
-
     os.makedirs(config.CONFIG_DIR, exist_ok=True)
 
     if save_reader.detect_mode():
