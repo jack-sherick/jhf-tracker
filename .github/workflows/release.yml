@@ -19,7 +19,7 @@ jobs:
             artifact_path: dist/jhf-tracker.exe
           - os: macos-latest
             asset_name: jhf-tracker-mac
-            artifact_path: dist/jhf-tracker.app/Contents/MacOS/jhf-tracker-bin
+            artifact_path: dist/jhf-tracker.app/Contents/MacOS/jhf-tracker
           - os: ubuntu-22.04
             asset_name: jhf-tracker-linux
             artifact_path: dist/jhf-tracker
@@ -38,13 +38,17 @@ jobs:
         run: sudo apt-get install -y binutils
 
       - name: Install Python packages
-        run: pip install psycopg2-binary pyinstaller certifi
+        run: pip install psycopg2-binary pyinstaller certifi pystray pillow icnsutil
 
       - name: Create secrets.py
         shell: bash
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
         run: printf 'GITHUB_TOKEN = "%s"\n' "$GH_PAT" > secrets.py
+
+      - name: Generate icon
+        if: runner.os == 'Windows'
+        run: python scripts/generate_icon.py
 
       - name: Build (Windows)
         if: runner.os == 'Windows'

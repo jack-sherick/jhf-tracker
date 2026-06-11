@@ -2,6 +2,7 @@ import sys
 
 import config
 import listener
+import tray
 import updater
 
 print(f"[jhf-tracker] v{config.VERSION}")
@@ -14,4 +15,4 @@ if getattr(sys, "frozen", False):
         traceback.print_exc()
         input("[updater] Press Enter to continue...")
 
-listener.run()
+tray.run(listener.run)

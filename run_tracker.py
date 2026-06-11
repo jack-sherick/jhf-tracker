@@ -242,8 +242,10 @@ def process(raw: str, events: list):
     # Run end — write JSON
     m = re.search(r'Saved run history: (\S+)\.run', raw)
     if m:
-        _run["run_id"] = m.group(1)
-        _run["result"] = _result
+        run_id = m.group(1)
+        _run["run_id"] = run_id
+        result = save_reader.read_run_result(run_id)
+        _run["result"] = result if result is not None else _result
         db.insert_run(_run)
         _run = None
         _result = True

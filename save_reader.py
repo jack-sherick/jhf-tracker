@@ -46,6 +46,18 @@ def get_current_event(raw: str, act: int) -> str | None:
         return None
 
 
+def read_run_result(run_id: str) -> bool | None:
+    path = os.path.join(
+        config._sts2_data_dir(), "steam", config.STEAM_ID, f"profile{config.PROFILE}", "saves", "history", f"{run_id}.run"
+    )
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.loads(f.read())
+        return data.get("win")
+    except Exception:
+        return None
+
+
 def parse_save(raw: str) -> dict | None:
     if not raw:
         return None

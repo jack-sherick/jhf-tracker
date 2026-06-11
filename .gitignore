@@ -4,3 +4,5 @@ logs
 __pycache__/*
 .DS_Store
 secrets.py
+assets/stoke.ico
+assets/stoke.icns
