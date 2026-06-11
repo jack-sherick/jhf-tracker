@@ -45,7 +45,8 @@ def build_icns(img: Image.Image, out: str):
 
 
 if __name__ == "__main__":
-    src = sys.argv[1] if len(sys.argv) > 1 else "assets/stoke.png"
+    positional = [a for a in sys.argv[1:] if not a.startswith("--")]
+    src = positional[0] if positional else "assets/stoke.png"
     img = Image.open(src)
 
     if "--icns" in sys.argv:
