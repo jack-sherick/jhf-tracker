@@ -49,7 +49,7 @@ def _open_log_terminal(log_path: str):
     if system == "Darwin":
         subprocess.Popen([
             "osascript", "-e",
-            f'tell application "Terminal" to do script "tail -f {log_path}"'
+            f'tell application "Terminal" to do script "tail -f " & quoted form of "{log_path}"'
         ])
     else:
         for cmd in [
