@@ -1,12 +1,22 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+import sys
+from PyInstaller.utils.hooks import collect_all
+
+extra_datas, extra_binaries, extra_hiddenimports = [], [], []
+if sys.platform == 'darwin':
+    for pkg in ('objc', 'pystray'):
+        d, b, h = collect_all(pkg)
+        extra_datas += d
+        extra_binaries += b
+        extra_hiddenimports += h
 
 a = Analysis(
     ['main.py'],
     pathex=[],
-    binaries=[],
-    datas=[('assets/stoke.png', 'assets')],
-    hiddenimports=[],
+    binaries=extra_binaries,
+    datas=[('assets/stoke.png', 'assets')] + extra_datas,
+    hiddenimports=extra_hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -15,8 +25,6 @@ a = Analysis(
     optimize=0,
 )
 pyz = PYZ(a.pure)
-
-import sys
 
 exe = EXE(
     pyz,
