@@ -146,6 +146,7 @@ def on_save(snapshot: dict | None):
     f["max_health_lost"] = max_health_lost
     f["relics"] = snapshot.get("relics", [])
     f["floor_gold"] = snapshot["gold"]
+    f["deck_snapshot"] = list(_run.get("deck", []))
 
     if _merchant_snapshot is not None:
         _diff_merchant(_merchant_snapshot, snapshot, f)

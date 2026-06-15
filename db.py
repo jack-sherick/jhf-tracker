@@ -57,8 +57,8 @@ def insert_run(run: dict):
                                        health, max_health, health_lost, max_health_lost,
                                        character, relics, floor_gold,
                                        cards_purchased, relics_purchased, potions_purchased, card_cuts_purchased,
-                                       multiplayer, patch)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                       multiplayer, patch, deck_snapshot)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     """,
                     (
                         run["run_id"],
@@ -87,6 +87,7 @@ def insert_run(run: dict):
                         json.dumps(floor.get("card_cuts_purchased", [])),
                         run.get("multiplayer", False),
                         run.get("patch"),
+                        json.dumps(floor.get("deck_snapshot", [])),
                     ),
                 )
 

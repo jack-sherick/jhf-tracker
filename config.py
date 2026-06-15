@@ -2,7 +2,7 @@ import json
 import os
 import platform
 
-VERSION = "0.1.6"
+VERSION = "0.1.7"
 
 def _sts2_data_dir() -> str:
     system = platform.system()
