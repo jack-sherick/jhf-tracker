@@ -46,16 +46,69 @@ def get_current_event(raw: str, act: int) -> str | None:
         return None
 
 
-def read_run_result(run_id: str) -> bool | None:
-    path = os.path.join(
+def _run_history_path(run_id: str) -> str:
+    return os.path.join(
         config._sts2_data_dir(), "steam", config.STEAM_ID, f"profile{config.PROFILE}", "saves", "history", f"{run_id}.run"
     )
+
+
+def read_run_history(run_id: str) -> dict | None:
     try:
-        with open(path, "r", encoding="utf-8") as f:
-            data = json.loads(f.read())
-        return data.get("win")
+        with open(_run_history_path(run_id), "r", encoding="utf-8") as f:
+            return json.loads(f.read())
     except Exception:
         return None
+
+
+def read_run_result(run_id: str) -> bool | None:
+    data = read_run_history(run_id)
+    return data.get("win") if data else None
+
+
+def read_run_card_offers(run_id: str, data: dict | None = None) -> dict:
+    """Returns {encounter_name: [[offer, ...], ...]} in visit order for our player.
+
+    Each encounter name maps to a list of offer-lists (one per visit), so duplicate
+    encounters in a single run can be matched positionally by the caller.
+    Only covers combat-type rooms (monster, elite, boss) where card_choices = reward pool.
+    """
+    if data is None:
+        data = read_run_history(run_id)
+    if not data:
+        return {}
+
+    our_pid = int(config.STEAM_ID)
+    result = {}
+
+    for act_history in data.get("map_point_history", []):
+        for map_point in act_history:
+            rooms = map_point.get("rooms", [])
+            if not rooms:
+                continue
+            room = rooms[0]
+            if room.get("room_type") not in ("monster", "elite", "boss"):
+                continue
+            model_id = room.get("model_id", "")
+            encounter = model_id.split(".", 1)[-1] if "." in model_id else None
+            if not encounter:
+                continue
+
+            for pstat in map_point.get("player_stats", []):
+                if pstat.get("player_id") != our_pid:
+                    continue
+                choices = [
+                    {
+                        "id": c["card"]["id"].replace("CARD.", ""),
+                        "was_picked": c.get("was_picked", False),
+                    }
+                    for c in pstat.get("card_choices", [])
+                    if "id" in c.get("card", {})
+                ]
+                if choices:
+                    result.setdefault(encounter, []).append(choices)
+                break
+
+    return result
 
 
 def parse_save(raw: str) -> dict | None:

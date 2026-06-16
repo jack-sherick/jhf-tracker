@@ -245,8 +245,16 @@ def process(raw: str, events: list):
     if m:
         run_id = m.group(1)
         _run["run_id"] = run_id
-        result = save_reader.read_run_result(run_id)
-        _run["result"] = result if result is not None else _result
+        history = save_reader.read_run_history(run_id)
+        _run["result"] = (history.get("win") if history else None) or _result
+        _run["run_history"] = history
+
+        card_offers = save_reader.read_run_card_offers(run_id, data=history)
+        for floor in sorted(_run["floors"].values(), key=lambda f: (f["act"], f["floor"])):
+            encounter = floor.get("encounter")
+            if encounter and encounter in card_offers and card_offers[encounter]:
+                floor["card_offers"] = card_offers[encounter].pop(0)
+
         db.insert_run(_run)
         _run = None
         _result = True

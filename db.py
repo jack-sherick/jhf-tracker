@@ -25,8 +25,9 @@ def insert_run(run: dict):
             cur.execute(
                 """
                 INSERT INTO runs (run_id, player_id, character, ascension, seed, result,
-                                  floor_reached, gold, health, max_health, deck, relics, multiplayer, patch)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                  floor_reached, gold, health, max_health, deck, relics, multiplayer, patch,
+                                  run_history)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (run_id) DO NOTHING
                 """,
                 (
@@ -44,6 +45,7 @@ def insert_run(run: dict):
                     json.dumps(run.get("relics", [])),
                     run.get("multiplayer", False),
                     run.get("patch"),
+                    json.dumps(run.get("run_history")) if run.get("run_history") else None,
                 ),
             )
 
@@ -57,8 +59,8 @@ def insert_run(run: dict):
                                        health, max_health, health_lost, max_health_lost,
                                        character, relics, floor_gold,
                                        cards_purchased, relics_purchased, potions_purchased, card_cuts_purchased,
-                                       multiplayer, patch, deck_snapshot)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                       multiplayer, patch, deck_snapshot, card_offers)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     """,
                     (
                         run["run_id"],
@@ -88,6 +90,7 @@ def insert_run(run: dict):
                         run.get("multiplayer", False),
                         run.get("patch"),
                         json.dumps(floor.get("deck_snapshot", [])),
+                        json.dumps(floor.get("card_offers")) if floor.get("card_offers") is not None else None,
                     ),
                 )
 
