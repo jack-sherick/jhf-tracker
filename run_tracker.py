@@ -17,6 +17,7 @@ _last_health: int | None = None
 _last_max_health: int | None = None
 _merchant_snapshot: dict | None = None
 _patch: str | None = None
+_encounter_won: bool = False
 
 
 def set_patch(patch: str):
@@ -47,6 +48,12 @@ def _get_floor(act: int, floor: int) -> dict:
 
 
 def _add_event(act: int, floor: int, event):
+    if isinstance(event, Encounter) and event.mode == "ActiveCombat":
+        key = f"{act}-{floor}"
+        if key in _run["floors"] and _run["floors"][key].get("mode") == "ActiveCombat" and not _encounter_won:
+            print(f"[run_tracker] Encounter restarted on {key}, flushing stats for this floor...")
+            del _run["floors"][key]
+
     f = _get_floor(act, floor)
 
     if isinstance(event, Encounter):
@@ -160,7 +167,7 @@ def on_save(snapshot: dict | None):
 
 
 def _start_run(character: str, ascension: int, seed: str, multiplayer: bool):
-    global _run, _result, _rt_act, _rt_floor, _prev_floor_health, _prev_floor_max_health, _last_health, _last_max_health, _merchant_snapshot
+    global _run, _result, _rt_act, _rt_floor, _prev_floor_health, _prev_floor_max_health, _last_health, _last_max_health, _merchant_snapshot, _encounter_won
     _run = {
         "run_id": None,
         "player_id": config.PLAYER_ID,
@@ -186,12 +193,13 @@ def _start_run(character: str, ascension: int, seed: str, multiplayer: bool):
     _last_health = None
     _last_max_health = None
     _merchant_snapshot = None
+    _encounter_won = False
     mode = "multiplayer" if multiplayer else "singleplayer"
     print(f"[run_tracker] Started ({mode}): {character} A{ascension} seed={seed}")
 
 
 def process(raw: str, events: list):
-    global _run, _result, _rt_act, _rt_floor, _prev_floor_health, _prev_floor_max_health, _last_health, _last_max_health
+    global _run, _result, _rt_act, _rt_floor, _prev_floor_health, _prev_floor_max_health, _last_health, _last_max_health, _encounter_won
 
     raw = raw.strip()
 
@@ -218,9 +226,11 @@ def process(raw: str, events: list):
     if _run is None:
         return
 
-    # Track loss
+    # Track loss/win
     if "has lost to encounter" in raw:
         _result = False
+    if "has won against encounter" in raw:
+        _encounter_won = True
 
     # Add events to CURRENT floor first, CombatReward belongs to the floor
     # we're leaving, which is still _rt_act/_rt_floor at this point
@@ -233,6 +243,7 @@ def process(raw: str, events: list):
         if m:
             _rt_act = int(m.group(1))
             _rt_floor = int(m.group(2))
+            _encounter_won = False
             _run["floor_reached"] = max(_run["floor_reached"], _rt_floor)
             if _last_health is not None:
                 _prev_floor_health = _last_health
