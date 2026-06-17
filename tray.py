@@ -64,7 +64,7 @@ def run(listener_fn, log_path=None):
 
     def on_quit(icon, item):
         icon.stop()
-        sys.exit(0)
+        os._exit(0)
 
     menu_items = [
         pystray.MenuItem("Show Logs", on_show_logs),
@@ -90,4 +90,4 @@ def run(listener_fn, log_path=None):
                 time.sleep(1)
         except KeyboardInterrupt:
             icon.stop()
-            sys.exit(0)
+            os._exit(0)
