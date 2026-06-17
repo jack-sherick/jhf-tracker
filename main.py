@@ -8,7 +8,7 @@ import updater
 
 APP_LOG = os.path.join(config.CONFIG_DIR, "app.log")
 
-if getattr(sys, "frozen", False) and sys.platform != "win32":
+if getattr(sys, "frozen", False):
     os.makedirs(config.CONFIG_DIR, exist_ok=True)
     _log_file = open(APP_LOG, "w", buffering=1)
     sys.stdout = sys.stderr = _log_file

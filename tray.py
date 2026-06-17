@@ -9,9 +9,6 @@ import time
 import pystray
 from PIL import Image, ImageDraw
 
-_console_visible = False
-
-
 def _icon_path():
     base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(base, "assets", "stoke.png")
@@ -32,18 +29,6 @@ def _make_icon(size: int = 64) -> Image.Image:
     return result
 
 
-def _get_console_hwnd():
-    import ctypes
-    return ctypes.windll.kernel32.GetConsoleWindow()
-
-
-def _set_console_visible(visible: bool):
-    import ctypes
-    hwnd = _get_console_hwnd()
-    if hwnd:
-        ctypes.windll.user32.ShowWindow(hwnd, 5 if visible else 0)
-
-
 def _open_log_terminal(log_path: str):
     system = platform.system()
     if system == "Darwin":
@@ -51,6 +36,11 @@ def _open_log_terminal(log_path: str):
             "osascript", "-e",
             f'tell application "Terminal" to do script "tail -f " & quoted form of "{log_path}"'
         ])
+    elif platform.system() == "Windows":
+        subprocess.Popen(
+            ["powershell", "-NoExit", "-Command", f"Get-Content -Wait \"{log_path}\""],
+            creationflags=subprocess.CREATE_NEW_CONSOLE,
+        )
     else:
         for cmd in [
             ["gnome-terminal", "--", "tail", "-f", log_path],
@@ -66,22 +56,10 @@ def _open_log_terminal(log_path: str):
 
 
 def run(listener_fn, log_path=None):
-    global _console_visible
     image = _make_icon()
 
-    is_windows = platform.system() == "Windows"
-    if is_windows:
-        _set_console_visible(False)
-
-    def on_toggle_console(icon, item):
-        global _console_visible
-        _console_visible = not _console_visible
-        _set_console_visible(_console_visible)
-
     def on_show_logs(icon, item):
-        if is_windows:
-            on_toggle_console(icon, item)
-        elif log_path:
+        if log_path:
             _open_log_terminal(log_path)
 
     def on_quit(icon, item):
@@ -89,10 +67,7 @@ def run(listener_fn, log_path=None):
         sys.exit(0)
 
     menu_items = [
-        pystray.MenuItem(
-            lambda item: "Hide Logs" if _console_visible else "Show Logs",
-            on_show_logs,
-        ),
+        pystray.MenuItem("Show Logs", on_show_logs),
         pystray.MenuItem("Quit", on_quit),
     ]
 

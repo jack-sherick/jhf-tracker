@@ -1,4 +1,3 @@
-import icnsutil
 import math
 import os
 import sys
@@ -25,15 +24,25 @@ def make_circular_cover(img: Image.Image, size: int) -> Image.Image:
 
 
 def build_ico(img: Image.Image, out: str):
-    sizes = [16, 32, 48, 256]
+    sizes = [16, 24, 32, 48, 64, 96, 128]
     frames = [make_circular_cover(img, s) for s in sizes]
-    frames[0].save(out, format="ICO", append_images=frames[1:], sizes=[(s, s) for s in sizes])
+    # Primary image must be the LARGEST frame: Pillow skips any size > primary.size.
+    # bitmap_format="bmp" forces DIB encoding (no PNG compression) for all frames so
+    # PyInstaller's PE resource linker embeds them correctly.
+    frames[-1].save(
+        out,
+        format="ICO",
+        sizes=[(s, s) for s in sizes],
+        append_images=frames[:-1],
+        bitmap_format="bmp",
+    )
     print(f"Saved {out}")
 
 
 _ICNS_KEYS = {16: 'icp4', 32: 'icp5', 64: 'icp6', 128: 'ic07', 256: 'ic08', 512: 'ic09', 1024: 'ic10'}
 
 def build_icns(img: Image.Image, out: str):
+    import icnsutil
     ic = icnsutil.IcnsFile()
     with tempfile.TemporaryDirectory() as tmp:
         for size, key in _ICNS_KEYS.items():
