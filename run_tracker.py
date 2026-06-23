@@ -261,10 +261,60 @@ def process(raw: str, events: list):
         _run["run_history"] = history
 
         card_offers = save_reader.read_run_card_offers(run_id, data=history)
+        ancient_choices = save_reader.read_run_ancient_choices(run_id, data=history)
+        potions_used_run = save_reader.read_run_potions_used(run_id, data=history)
+        event_choices = save_reader.read_run_event_choices(run_id, data=history)
+        rest_choices = save_reader.read_run_rest_choices(run_id, data=history)
+        turns_taken_run = save_reader.read_run_turns_taken(run_id, data=history)
+        monster_ids_run = save_reader.read_run_monster_ids(run_id, data=history)
+        cards_removed_run = save_reader.read_run_cards_removed(run_id, data=history)
+        gold_breakdown = save_reader.read_run_gold_breakdown(run_id, data=history)
+
+        _MODE_TO_MP_TYPE = {"RestSite": "rest_site", "Merchant": "shop", "Treasure": "treasure"}
+        positional_floors: dict[str, dict[int, list]] = {"RestSite": {}, "Merchant": {}, "Treasure": {}}
+
         for floor in sorted(_run["floors"].values(), key=lambda f: (f["act"], f["floor"])):
             encounter = floor.get("encounter")
-            if encounter and encounter in card_offers and card_offers[encounter]:
-                floor["card_offers"] = card_offers[encounter].pop(0)
+            if encounter:
+                if encounter in card_offers and card_offers[encounter]:
+                    floor["card_offers"] = card_offers[encounter].pop(0)
+                if encounter in ancient_choices and ancient_choices[encounter]:
+                    floor["ancient_choices"] = ancient_choices[encounter].pop(0)
+                if encounter in potions_used_run and potions_used_run[encounter]:
+                    run_potions = potions_used_run[encounter].pop(0)
+                    if not floor.get("potions_used") and run_potions:
+                        floor["potions_used"] = [{"potion": p} for p in run_potions]
+                if encounter in event_choices and event_choices[encounter]:
+                    floor["event_choices"] = event_choices[encounter].pop(0)
+                if encounter in turns_taken_run and turns_taken_run[encounter]:
+                    floor["turns_taken"] = turns_taken_run[encounter].pop(0)
+                if encounter in monster_ids_run and monster_ids_run[encounter]:
+                    floor["monster_ids"] = monster_ids_run[encounter].pop(0)
+                cr_enc = cards_removed_run["by_encounter"]
+                if encounter in cr_enc and cr_enc[encounter]:
+                    removed = cr_enc[encounter].pop(0)
+                    if removed:
+                        floor["cards_removed"] = removed
+                gb_enc = gold_breakdown["by_encounter"]
+                if encounter in gb_enc and gb_enc[encounter]:
+                    floor["gold_breakdown"] = gb_enc[encounter].pop(0)
+            mode = floor.get("mode")
+            if mode in positional_floors:
+                positional_floors[mode].setdefault(floor["act"], []).append(floor)
+
+        for mode, floors_by_act in positional_floors.items():
+            mp_type = _MODE_TO_MP_TYPE[mode]
+            for act, floors in floors_by_act.items():
+                rc = rest_choices.get(act, []) if mode == "RestSite" else []
+                cr = cards_removed_run["by_act"].get(act, []) if mode == "Merchant" else []
+                gb = gold_breakdown["by_act"].get((act, mp_type), [])
+                for i, floor in enumerate(floors):
+                    if i < len(rc):
+                        floor["rest_choice"] = rc[i]
+                    if i < len(cr) and cr[i]:
+                        floor["cards_removed"] = cr[i]
+                    if i < len(gb):
+                        floor["gold_breakdown"] = gb[i]
 
         db.insert_run(_run)
         _run = None

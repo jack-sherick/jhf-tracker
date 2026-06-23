@@ -59,8 +59,10 @@ def insert_run(run: dict):
                                        health, max_health, health_lost, max_health_lost,
                                        character, relics, floor_gold,
                                        cards_purchased, relics_purchased, potions_purchased, card_cuts_purchased,
-                                       multiplayer, patch, deck_snapshot, card_offers)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                       multiplayer, patch, deck_snapshot, card_offers, ancient_choices, event_choices,
+                                       rest_choice, turns_taken, monster_ids, cards_removed,
+                                       gold_gained, gold_spent, gold_lost, gold_stolen)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     """,
                     (
                         run["run_id"],
@@ -91,6 +93,16 @@ def insert_run(run: dict):
                         run.get("patch"),
                         json.dumps(floor.get("deck_snapshot", [])),
                         json.dumps(floor.get("card_offers")) if floor.get("card_offers") is not None else None,
+                        json.dumps(floor.get("ancient_choices")) if floor.get("ancient_choices") is not None else None,
+                        json.dumps(floor.get("event_choices")) if floor.get("event_choices") is not None else None,
+                        json.dumps(floor.get("rest_choice")) if floor.get("rest_choice") is not None else None,
+                        floor.get("turns_taken"),
+                        json.dumps(floor.get("monster_ids")) if floor.get("monster_ids") is not None else None,
+                        json.dumps(floor.get("cards_removed")) if floor.get("cards_removed") is not None else None,
+                        floor.get("gold_breakdown", {}).get("gained"),
+                        floor.get("gold_breakdown", {}).get("spent"),
+                        floor.get("gold_breakdown", {}).get("lost"),
+                        floor.get("gold_breakdown", {}).get("stolen"),
                     ),
                 )
 
